@@ -46,13 +46,15 @@ jobs:
             --pdf-engine=${{ github.event.inputs.pdf_engine || 'xelatex' }}
             --metadata-file=metadata.yaml
             --metadata="date:$(date +%Y-%m-%d)"
+            --metadata="monofont:"
+            --metadata="mainfont:"
             --from=${{ github.event.inputs.format || 'rst' }}
             --to=pdf
             --output=build-artifact.pdf
             ${{ github.event.inputs.master_doc || 'src/index.txt' }}
       - uses: actions/upload-artifact@v4
         with:
-          name: build-$(git rev-parse --short HEAD).pdf
+          name: $(git rev-parse --short HEAD).pdf
           path: build-artifact.pdf
   odt:
     runs-on: ubuntu-latest
@@ -72,5 +74,5 @@ jobs:
             ${{ github.event.inputs.master_doc || 'src/index.txt' }}
       - uses: actions/upload-artifact@v4
         with:
-          name: build-$(git rev-parse --short HEAD).odt
+          name: $(git rev-parse --short HEAD).odt
           path: build-artifact.odt
