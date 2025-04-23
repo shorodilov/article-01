@@ -46,7 +46,7 @@ jobs:
             --pdf-engine=${{ github.event.inputs.pdf_engine || 'xelatex' }}
             --metadata-file=metadata.yaml
             --metadata="date:$(date +%Y-%m-%d)"
-            --from =${{ github.event.inputs.format || 'rst' }}
+            --from=${{ github.event.inputs.format || 'rst' }}
             --to=pdf
             --output=build-artifact.pdf
             ${{ github.event.inputs.master_doc || 'src/index.txt' }}
