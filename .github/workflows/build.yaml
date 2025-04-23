@@ -1,0 +1,76 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      pdf_engine:
+        description: "PDF engine to use"
+        required: true
+        type: choice
+        options:
+          - pdflatex
+          - xelatex
+          - lualatex
+        default: xelatex
+      master_doc:
+        description: "Master document to use"
+        required: true
+        type: string
+        default: "src/index.txt"
+      format:
+        description: "Master document format"
+        required: true
+        type: choice
+        options:
+          - markdown
+          - rst
+        default: rst
+
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker://pandoc/latex:3.5
+        with:
+          # noinspection UndefinedParamsPresent
+          args: >-
+            --standalone
+            --citeproc
+            --pdf-engine=${{ github.event.inputs.pdf_engine || 'xelatex' }}
+            --metadata-file=metadata.yaml
+            --metadata=date:$(date +%Y-%m-%d)
+            --from =${{ github.event.inputs.format || 'rst' }}
+            --to=pdf
+            --output=build-artifact.pdf
+            ${{ github.event.inputs.master_doc || 'src/index.txt' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-$(git rev-parse --short HEAD).pdf
+          path: build-artifact.pdf
+  odt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker://pandoc/core:3.5
+        with:
+          # noinspection UndefinedParamsPresent
+          args: >-
+            --standalone
+            --citeproc
+            --metadata-file=metadata.yaml
+            --metadata=date:$(date +%Y-%m-%d)
+            --from=${{ github.event.inputs.format || 'rst' }}
+            --to=odt
+            --output=build-artifact.odt
+            ${{ github.event.inputs.master_doc || 'src/index.txt' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-$(git rev-parse --short HEAD).odt
+          path: build-artifact.odt
