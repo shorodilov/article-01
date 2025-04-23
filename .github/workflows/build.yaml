@@ -9,15 +9,6 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      pdf_engine:
-        description: "PDF engine to use"
-        required: true
-        type: choice
-        options:
-          - pdflatex
-          - xelatex
-          - lualatex
-        default: xelatex
       master_doc:
         description: "Master document to use"
         required: true
@@ -30,34 +21,25 @@ on:
         options:
           - markdown
           - rst
+          - latex
         default: rst
 
 jobs:
-  pdf:
+  setup:
     runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.value }}
+      now: ${{ steps.now.outputs.value }}
     steps:
       - uses: actions/checkout@v4
-      - uses: docker://pandoc/latex:3.5
-        with:
-          # noinspection UndefinedParamsPresent
-          args: >-
-            --standalone
-            --citeproc
-            --pdf-engine=${{ github.event.inputs.pdf_engine || 'xelatex' }}
-            --metadata-file=metadata.yaml
-            --metadata="date:$(date +%Y-%m-%d)"
-            --metadata="monofont:"
-            --metadata="mainfont:"
-            --from=${{ github.event.inputs.format || 'rst' }}
-            --to=pdf
-            --output=build-artifact.pdf
-            ${{ github.event.inputs.master_doc || 'src/index.txt' }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: $(git rev-parse --short HEAD).pdf
-          path: build-artifact.pdf
+      - id: sha
+        run: echo "value=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - id: now
+        run: echo "value=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
   odt:
     runs-on: ubuntu-latest
+    needs:
+      - setup
     steps:
       - uses: actions/checkout@v4
       - uses: docker://pandoc/core:3.5
@@ -67,12 +49,12 @@ jobs:
             --standalone
             --citeproc
             --metadata-file=metadata.yaml
-            --metadata="date:$(date +%Y-%m-%d)"
+            --metadata="date:${{ needs.setup.outputs.now }}"
             --from=${{ github.event.inputs.format || 'rst' }}
             --to=odt
             --output=build-artifact.odt
             ${{ github.event.inputs.master_doc || 'src/index.txt' }}
       - uses: actions/upload-artifact@v4
         with:
-          name: $(git rev-parse --short HEAD).odt
+          name: ${{ needs.setup.outputs.sha }}.odt
           path: build-artifact.odt
